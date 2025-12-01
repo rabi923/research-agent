@@ -1,0 +1,12 @@
+openai
+anthropic
+google-generativeai
+tavily-python
+python-dotenv
+streamlit
+gTTS
+pydantic
+tenacity
+pydantic-settings
+elevenlabs
+fpdf
