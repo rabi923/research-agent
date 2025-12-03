@@ -62,16 +62,26 @@ class CollectorAgent:
                      documents.append({"title": result['title'], "url": result['url'], "type": result['url'].split('.')[-1]})
 
         # Step 3: Optional document specific search
-        if look_for_documents:
-            doc_query = f"{query} filetype:pdf OR filetype:docx OR filetype:xlsx"
-            print(f"Collector Agent: Searching for documents '{doc_query}'...")
-            doc_results = self.search_tool.search(doc_query)
-            for result in doc_results:
-                 if result['url'].lower().endswith(('.pdf', '.docx', '.xlsx')):
-                     documents.append({"title": result['title'], "url": result['url'], "type": result['url'].split('.')[-1]})
-                     # Also add to context
-                     collected_data.append(f"Document Found: {result['title']} ({result['url']})\nContent: {result['content']}")
-
+        # Always check for documents if the query implies research
+        if look_for_documents or True: # Force document search for deep research
+            # Aggressive search for multiple file types
+            doc_queries = [
+                f"{query} filetype:pdf",
+                f"{query} filetype:docx",
+                f"{query} filetype:xlsx"
+            ]
+            
+            print(f"Collector Agent: Aggressively searching for documents...")
+            for doc_query in doc_queries:
+                print(f"  - Searching: '{doc_query}'")
+                doc_results = self.search_tool.search(doc_query)
+                for result in doc_results:
+                     ext = result['url'].split('.')[-1].lower()
+                     if ext in ['pdf', 'docx', 'xlsx']:
+                         # Avoid duplicates
+                         if not any(d['url'] == result['url'] for d in documents):
+                             documents.append({"title": result['title'], "url": result['url'], "type": ext})
+                             collected_data.append(f"Document Found: {result['title']} ({result['url']})\nContent: {result['content']}")
 
         return {
             "context": "\n\n".join(collected_data),

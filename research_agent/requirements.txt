@@ -10,3 +10,5 @@ tenacity
 pydantic-settings
 elevenlabs
 fpdf
+python-docx
+openpyxl
