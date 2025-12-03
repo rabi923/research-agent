@@ -6,17 +6,17 @@ class Settings(BaseSettings):
     # LLM Keys
     OPENAI_API_KEY: str = Field(default="")
     ANTHROPIC_API_KEY: str = Field(default="")
-    GOOGLE_API_KEY: str = Field(default="AIzaSyD2sYdRVHLHT4UTi4MZyZ5hjlF5LBS3aPU")
+    GOOGLE_API_KEY: str = Field(default="")
 
     # Search Keys
-    TAVILY_API_KEY: str = Field(default="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")
+    TAVILY_API_KEY: str = Field(default="")
     SERPER_API_KEY: str = Field(default="")
 
     # TTS Keys
-    ELEVENLABS_API_KEY: str = Field(default="sk_f16a30a800512abab7eed220b7e9d60fe7a33eee74c32ec2")
+    ELEVENLABS_API_KEY: str = Field(default="")
 
     # Defaults
-    DEFAULT_LLM_PROVIDER: str = "openai"  # openai, anthropic, google, mock
+    DEFAULT_LLM_PROVIDER: str = "google"  # openai, anthropic, google, mock
     DEFAULT_SEARCH_PROVIDER: str = "tavily" # tavily, duckduckgo
     DEFAULT_TTS_PROVIDER: str = "elevenlabs"    # gtts, openai, elevenlabs
 
