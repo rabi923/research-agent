@@ -14,11 +14,16 @@ class Settings(BaseSettings):
 
     # TTS Keys
     ELEVENLABS_API_KEY: str = Field(default="")
+    
+    # AWS Keys (for Polly)
+    AWS_ACCESS_KEY_ID: str = Field(default="")
+    AWS_SECRET_ACCESS_KEY: str = Field(default="")
+    AWS_REGION: str = Field(default="us-east-1")
 
     # Defaults
     DEFAULT_LLM_PROVIDER: str = "google"  # openai, anthropic, google, mock
     DEFAULT_SEARCH_PROVIDER: str = "serper" # serper, tavily, duckduckgo
-    DEFAULT_TTS_PROVIDER: str = "elevenlabs"    # gtts, openai, elevenlabs
+    DEFAULT_TTS_PROVIDER: str = "gtts"    # gtts, polly, openai, elevenlabs
 
     # LLM Config
     LLM_TEMPERATURE: float = 0.7

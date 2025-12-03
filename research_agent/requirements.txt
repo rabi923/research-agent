@@ -13,3 +13,4 @@ fpdf
 python-docx
 openpyxl
 requests
+boto3
