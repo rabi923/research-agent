@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # Defaults
     DEFAULT_LLM_PROVIDER: str = "google"  # openai, anthropic, google, mock
-    DEFAULT_SEARCH_PROVIDER: str = "tavily" # tavily, duckduckgo
+    DEFAULT_SEARCH_PROVIDER: str = "serper" # serper, tavily, duckduckgo
     DEFAULT_TTS_PROVIDER: str = "elevenlabs"    # gtts, openai, elevenlabs
 
     # LLM Config

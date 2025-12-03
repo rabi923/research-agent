@@ -1,7 +1,7 @@
 import json
 from typing import List, Dict
 from research_agent.core.llm.base import BaseLLMProvider
-from research_agent.core.search.tavily_provider import TavilySearchProvider
+from research_agent.core.search.serper_provider import SerperProvider
 from research_agent.core.llm.factory import get_llm_provider
 from research_agent.config.settings import settings
 
@@ -12,7 +12,7 @@ class CollectorAgent:
             from research_agent.core.search.mock_provider import MockSearchProvider
             self.search_tool = MockSearchProvider()
         else:
-            self.search_tool = TavilySearchProvider()
+            self.search_tool = SerperProvider()
 
     def collect(self, query: str, history: List[Dict] = []) -> Dict:
         """

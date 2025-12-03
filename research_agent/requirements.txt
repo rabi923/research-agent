@@ -12,3 +12,4 @@ elevenlabs
 fpdf
 python-docx
 openpyxl
+requests
