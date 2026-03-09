@@ -16,6 +16,10 @@ class SerperProvider(BaseSearchProvider):
         if not self.api_key:
             raise ValueError("SERPER_API_KEY is not set. Please add it to your .env file or Streamlit Secrets.")
         
+        # Debug: Check if API key is loaded (without exposing the full key)
+        if self.api_key:
+            print(f"Serper API Key loaded: {self.api_key[:10]}...{self.api_key[-4:]}")
+        
         headers = {
             'X-API-KEY': self.api_key,
             'Content-Type': 'application/json'

@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # Search Keys
     TAVILY_API_KEY: str = Field(default="")
     SERPER_API_KEY: str = Field(default="")
+    EXA_API_KEY: str = Field(default="")
 
     # TTS Keys
     ELEVENLABS_API_KEY: str = Field(default="")
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
     # Defaults
     DEFAULT_LLM_PROVIDER: str = "google"  # openai, anthropic, google, mock
     DEFAULT_SEARCH_PROVIDER: str = "serper" # serper, tavily, duckduckgo
-    DEFAULT_TTS_PROVIDER: str = "gtts"    # gtts, polly, openai, elevenlabs
+    DEFAULT_TTS_PROVIDER: str = "edge"    # gtts, polly, openai, elevenlabs, edge
 
     # LLM Config
     LLM_TEMPERATURE: float = 0.7
@@ -31,6 +32,7 @@ class Settings(BaseSettings):
 
     # Report Config
     REPORT_OUTPUT_DIR: str = "reports"
+
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

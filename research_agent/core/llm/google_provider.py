@@ -5,15 +5,18 @@ from research_agent.config.settings import settings
 
 class GoogleGeminiProvider(BaseLLMProvider):
     def __init__(self):
+        if not settings.GOOGLE_API_KEY:
+            print("Error: GOOGLE_API_KEY is missing in settings!")
+        else:
+            print(f"Google API Key loaded: {settings.GOOGLE_API_KEY[:5]}...{settings.GOOGLE_API_KEY[-4:]}")
+            
         genai.configure(api_key=settings.GOOGLE_API_KEY)
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        model_name = 'gemini-2.5-flash'
+        print(f"DEBUG: Initializing Google Model: {model_name}")
+        self.model = genai.GenerativeModel(model_name)
 
     def generate(self, prompt: str, history: list[dict] = [], system_prompt: Optional[str] = None) -> str:
         # Construct chat history for Gemini
-        # Gemini expects history as a list of Content objects or a chat session.
-        # For simplicity in this stateless wrapper, we'll format it into the prompt or use start_chat if we want to maintain state.
-        # Here we will format it as a text block for the "flash" model which handles context well.
-        
         context_str = ""
         if history:
             context_str = "Conversation History:\n"
@@ -30,8 +33,26 @@ class GoogleGeminiProvider(BaseLLMProvider):
         else:
             full_prompt = f"{context_str}User Query: {prompt}"
             
-        response = self.model.generate_content(full_prompt)
-        return response.text
+        # Retry logic
+        max_retries = 3
+        base_delay = 5
+        
+        import time
+        import random
+        
+        for attempt in range(max_retries):
+            try:
+                response = self.model.generate_content(full_prompt)
+                return response.text
+            except Exception as e:
+                if "429" in str(e) or "quota" in str(e).lower():
+                    if attempt < max_retries - 1:
+                        delay = (base_delay * (2 ** attempt)) + random.uniform(0, 1)
+                        print(f"DEBUG: Rate limit hit. Retrying in {delay:.2f}s...")
+                        time.sleep(delay)
+                        continue
+                raise e
+        return ""
 
     def stream(self, prompt: str, history: list[dict] = [], system_prompt: Optional[str] = None) -> Generator[str, None, None]:
         context_str = ""

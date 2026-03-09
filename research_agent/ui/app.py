@@ -21,6 +21,14 @@ if "agent" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Sidebar Configuration
+with st.sidebar:
+    st.header("⚙️ Settings")
+    use_deep_research = st.toggle("🚀 Deep Research (Exa)", value=False, help="Use Exa's autonomous agentic search for complex queries.")
+    st.divider()
+    st.markdown("### About")
+    st.info("The Research AI Agent uses multi-model architecture to collect and analyze data across the web.")
+
 # Display Chat
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -72,74 +80,90 @@ if prompt := st.chat_input("What would you like to know?"):
         st.markdown(prompt)
 
     # Generate Response
+    # Generate Response
     with st.chat_message("assistant"):
-        with st.spinner("Researching and Analyzing..."):
-            try:
-                history = st.session_state.messages[:-1]
+        # Create a placeholder for the response or status
+        response_placeholder = st.empty()
+        
+        try:
+            history = st.session_state.messages[:-1]
+            
+            # Use st.status for research progress
+            # We'll start it, but if it's a CHAT response, we might not need it.
+            # However, we don't know the type yet. 
+            # Strategy: Pass a callback that initializes st.status ONLY if it receives a "Research" related message.
+            # But simpler: Just use st.status for everything, and if it returns fast (Chat), it will just close.
+            
+            with st.status("Thinking...", expanded=True) as status:
+                def status_update(message):
+                    status.update(label=message, state="running")
+                    status.write(message)
                 
-                response = st.session_state.agent.process_query(prompt, history=history)
+                response = st.session_state.agent.process_query(prompt, history=history, status_callback=status_update, use_deep_research=use_deep_research)
                 
-                answer = response["answer"]
-                audio = response["audio"]
-                sources = response["sources"]
-                documents = response.get("documents", [])
-                pdf_path = response.get("pdf_path")
-                docx_path = response.get("docx_path")
-                excel_path = response.get("excel_path")
+                status.update(label="Complete!", state="complete", expanded=False)
 
-                st.markdown(answer)
-                if audio:
-                    st.audio(audio, format="audio/mp3")
-                
-                col1, col2, col3 = st.columns(3)
-                
-                if pdf_path:
-                    with open(pdf_path, "rb") as pdf_file:
-                        col1.download_button(
-                            label="📄 Download PDF",
-                            data=pdf_file,
-                            file_name=os.path.basename(pdf_path),
-                            mime="application/pdf"
-                        )
-                
-                if docx_path:
-                    with open(docx_path, "rb") as docx_file:
-                        col2.download_button(
-                            label="📝 Download DOCX",
-                            data=docx_file,
-                            file_name=os.path.basename(docx_path),
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        )
-                        
-                if excel_path:
-                    with open(excel_path, "rb") as excel_file:
-                        col3.download_button(
-                            label="📊 Download Excel",
-                            data=excel_file,
-                            file_name=os.path.basename(excel_path),
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                        )
+            answer = response["answer"]
+            audio = response["audio"]
+            sources = response["sources"]
+            documents = response.get("documents", [])
+            pdf_path = response.get("pdf_path")
+            docx_path = response.get("docx_path")
+            excel_path = response.get("excel_path")
 
-                if documents:
-                    with st.expander("Relevant Documents Found"):
-                        for doc in documents:
-                            st.markdown(f"- [{doc['title']}]({doc['url']}) ({doc['type']})")
+            st.markdown(answer)
+            if audio:
+                st.audio(audio, format="audio/mp3")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            if pdf_path:
+                with open(pdf_path, "rb") as pdf_file:
+                    col1.download_button(
+                        label="📄 Download PDF",
+                        data=pdf_file,
+                        file_name=os.path.basename(pdf_path),
+                        mime="application/pdf"
+                    )
+            
+            if docx_path:
+                with open(docx_path, "rb") as docx_file:
+                    col2.download_button(
+                        label="📝 Download DOCX",
+                        data=docx_file,
+                        file_name=os.path.basename(docx_path),
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
+                    
+            if excel_path:
+                with open(excel_path, "rb") as excel_file:
+                    col3.download_button(
+                        label="📊 Download Excel",
+                        data=excel_file,
+                        file_name=os.path.basename(excel_path),
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
 
-                if sources:
-                    with st.expander("Sources Analyzed"):
-                        for source in sources:
-                            st.markdown(f"- [{source['title']}]({source['url']})")
+            if documents:
+                with st.expander("Relevant Documents Found"):
+                    for doc in documents:
+                        st.markdown(f"- [{doc['title']}]({doc['url']}) ({doc['type']})")
 
-                # Add assistant message to chat
-                st.session_state.messages.append({
-                    "role": "assistant", 
-                    "content": answer, 
-                    "audio": audio,
-                    "sources": sources,
-                    "documents": documents,
-                    "pdf_path": pdf_path,
-                    "docx_path": docx_path,
-                    "excel_path": excel_path
-                })
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
+            if sources:
+                with st.expander("Sources Analyzed"):
+                    for source in sources:
+                        st.markdown(f"- [{source['title']}]({source['url']})")
+
+            # Add assistant message to chat
+            st.session_state.messages.append({
+                "role": "assistant", 
+                "content": answer, 
+                "audio": audio,
+                "sources": sources,
+                "documents": documents,
+                "pdf_path": pdf_path,
+                "docx_path": docx_path,
+                "excel_path": excel_path
+            })
+        except Exception as e:
+            st.error(f"An error occurred: {e}")

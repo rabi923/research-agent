@@ -13,6 +13,9 @@ def get_tts_provider() -> BaseTTSProvider:
     elif provider_name == "polly":
         from research_agent.core.tts.polly_provider import PollyProvider
         return PollyProvider()
+    elif provider_name == "edge":
+        from research_agent.core.tts.edge_provider import EdgeTTSProvider
+        return EdgeTTSProvider()
     else:
         # Fallback to gTTS if unknown
         return GTTSProvider()

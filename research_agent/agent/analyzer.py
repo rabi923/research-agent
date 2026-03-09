@@ -13,11 +13,14 @@ class AnalyzerAgent:
         self.output_dir = settings.REPORT_OUTPUT_DIR
         os.makedirs(self.output_dir, exist_ok=True)
 
-    def analyze(self, query: str, collected_data: Dict, history: List[Dict] = [], requested_formats: List[str] = ["pdf"]) -> Dict:
+    def analyze(self, query: str, collected_data: Dict, history: List[Dict] = [], requested_formats: List[str] = ["pdf"], status_callback=None) -> Dict:
         """
         Analyze collected data and generate a report.
         """
-        print(f"Analyzer Agent: Analyzing collected data for '{query}'...")
+        if status_callback:
+            status_callback(f"Analyzer Agent: Analyzing collected data for '{query}'...")
+        else:
+            print(f"Analyzer Agent: Analyzing collected data for '{query}'...")
         
         context = collected_data.get("context", "")
         sources = collected_data.get("sources", [])
@@ -38,28 +41,42 @@ class AnalyzerAgent:
         - Detailed Analysis (broken down by key topics)
         - Key Findings
         - Conclusion
-        - Relevant Documents (List the documents found: {documents})
         
         Do not hallucinate. Base your report strictly on the collected information.
+        Do NOT include a references or documents section - this will be added separately.
         """
         
-        report_content = self.llm.generate(report_prompt, history=history, system_prompt="You are a helpful analyst. Write detailed reports.")
+        if status_callback:
+            status_callback("Generating comprehensive report...")
+        print("DEBUG: Calling LLM for report generation...")
+        try:
+            report_content = self.llm.generate(report_prompt, history=history, system_prompt="You are a helpful analyst. Write detailed reports.")
+            print("DEBUG: Report generated successfully.")
+        except Exception as e:
+            print(f"DEBUG: Report Generation Failed: {e}")
+            report_content = f"Error generating report: {e}\n\nPlease check your API keys and try again."
         
-        # Append Sources to Report Body
+        # Append Sources to Report Body (properly formatted)
         if sources:
-            report_content += "\n\n## References\n"
+            report_content += "\n\n## References\n\n"
             for source in sources:
                 report_content += f"- [{source['title']}]({source['url']})\n"
 
         # Step 2: Generate Files
+        if status_callback:
+            status_callback("Creating PDF report...")
         pdf_path = self._generate_pdf(query, report_content)
         
         docx_path = None
         if "docx" in requested_formats:
+            if status_callback:
+                status_callback("Creating DOCX report...")
             docx_path = self._generate_docx(query, report_content)
             
         excel_path = None
         if "excel" in requested_formats:
+            if status_callback:
+                status_callback("Creating Excel data sheet...")
             excel_path = self._generate_excel(query, sources, documents)
         
         return {
@@ -75,6 +92,8 @@ class AnalyzerAgent:
         """
         Convert Markdown content to PDF with improved formatting.
         """
+        import re
+        
         pdf = FPDF()
         pdf.add_page()
         pdf.set_auto_page_break(auto=True, margin=15)
@@ -86,10 +105,22 @@ class AnalyzerAgent:
         
         # Content
         pdf.set_font("Arial", size=11)
+        in_references = False
         
         for line in content.split('\n'):
             safe_line = line.encode('latin-1', 'replace').decode('latin-1')
             
+            # Check if we're entering References section
+            if line.startswith('## References'):
+                in_references = True
+                pdf.ln(5)
+                pdf.set_font("Arial", 'B', 12)
+                pdf.cell(0, 10, 'References', 0, 1)
+                pdf.ln(3)
+                pdf.set_font("Arial", size=11)
+                continue
+            
+            # Handle section headers
             if line.startswith('# '):
                 pdf.ln(5)
                 pdf.set_font("Arial", 'B', 14)
@@ -101,10 +132,40 @@ class AnalyzerAgent:
                 pdf.cell(0, 10, safe_line.replace('## ', ''), 0, 1)
                 pdf.set_font("Arial", size=11)
             elif line.startswith('- '):
-                 pdf.set_x(15) # Indent bullet points
-                 pdf.multi_cell(0, 6, chr(149) + " " + safe_line.replace('- ', ''))
+                # Handle bullet points (especially in References)
+                if in_references:
+                    # Extract link from Markdown: [title](url)
+                    match = re.search(r'\[(.*?)\]\((.*?)\)', line)
+                    if match:
+                        link_text = match.group(1)
+                        link_url = match.group(2)
+                        safe_text = link_text.encode('latin-1', 'replace').decode('latin-1')
+                        
+                        # Create clickable bullet with link
+                        pdf.set_x(15)
+                        pdf.set_font("Arial", 'U', 11)  # Underline for links
+                        pdf.set_text_color(0, 0, 255)   # Blue color for links
+                        
+                        # Add bullet
+                        pdf.write(6, chr(149) + " ")
+                        
+                        # Add clickable link
+                        pdf.cell(0, 6, safe_text, 0, 1, link=link_url)
+                        
+                        # Reset formatting
+                        pdf.set_font("Arial", size=11)
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.ln(2)  # Add spacing between references
+                    else:
+                        pdf.set_x(15)
+                        pdf.multi_cell(0, 6, chr(149) + " " + safe_line.replace('- ', ''))
+                else:
+                    # Regular bullet points
+                    pdf.set_x(15)
+                    pdf.multi_cell(0, 6, chr(149) + " " + safe_line.replace('- ', ''))
             else:
-                pdf.multi_cell(0, 6, safe_line)
+                if line.strip():  # Only add non-empty lines
+                    pdf.multi_cell(0, 6, safe_line)
                 
         filename = f"{self._sanitize_filename(title)}_report.pdf"
         filepath = os.path.join(self.output_dir, filename)
